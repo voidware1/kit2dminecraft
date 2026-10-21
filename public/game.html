@@ -1,0 +1,2044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Voidware PvP Arena</title>
+  <style>
+    #vw {
+      --bg: #07060c;
+      --panel: rgba(12, 8, 20, 0.88);
+      --line: #a855f7;
+      --glow: rgba(168, 85, 247, 0.45);
+      --text: #efe8ff;
+      --muted: #b9a6d4;
+      --hp: #f43f5e;
+      --abs: #facc15;
+      --you: #c4b5fd;
+      --bot: #fb7185;
+      height: 100dvh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      line-height: 1.45;
+      overflow: hidden;
+      user-select: none;
+    }
+    #vw * { box-sizing: border-box; }
+    #vw button { font: inherit; color: inherit; }
+    #top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 12px;
+      border-bottom: 1px solid rgba(168, 85, 247, 0.45);
+      background: #0c0814;
+    }
+    #top h1 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: 0.16em;
+      font-weight: 700;
+    }
+    #top h1 span { color: #d8b4fe; letter-spacing: 0.08em; font-weight: 600; }
+    #top .spacer { flex: 1; }
+    #top button, #end button, .kit button, #touch button, #hotbar button {
+      background: #160d24;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      min-height: 44px;
+      padding: 8px 12px;
+      box-shadow: 0 0 12px rgba(124, 58, 237, 0.25);
+    }
+    #top button:hover, .kit button:hover, #end button:hover, #hotbar button:hover {
+      background: #241433;
+    }
+    #stage { position: relative; flex: 1; min-height: 0; background: #07060c; }
+    #c { width: 100%; height: 100%; display: block; touch-action: none; }
+    #menu, #end {
+      position: absolute;
+      z-index: 4;
+      inset: 10px;
+      overflow: auto;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: 0 0 28px var(--glow);
+      padding: 16px;
+    }
+    #menu[hidden], #end[hidden], #fightbar[hidden] { display: none !important; }
+    #menu h2 { margin: 0 0 4px; font-size: 22px; }
+    #menu .lead { margin: 0 0 12px; color: var(--muted); max-width: 70ch; }
+    #cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .kit {
+      border: 1px solid rgba(168, 85, 247, 0.55);
+      border-radius: 10px;
+      padding: 12px;
+      background: #120a1c;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 0;
+    }
+    .kit h3 { margin: 0; font-size: 16px; }
+    .kit p { margin: 0; color: var(--muted); font-size: 14px; }
+    .kit ul { margin: 0; padding-left: 18px; font-size: 13px; }
+    .kit button { margin-top: auto; }
+    #controls {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    #fightbar {
+      border-top: 1px solid rgba(168, 85, 247, 0.45);
+      background: #0c0814;
+      padding: 8px 10px 10px;
+    }
+    #hud { display: flex; gap: 12px; align-items: center; }
+    .who { flex: 1; min-width: 0; }
+    .who .nm { font-size: 13px; margin-bottom: 4px; }
+    .track {
+      position: relative;
+      height: 12px;
+      background: #1a1024;
+      border: 1px solid rgba(168, 85, 247, 0.4);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .track i, .track b {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 0;
+    }
+    .track i { background: var(--hp); }
+    .track b { background: var(--abs); opacity: 0.9; }
+    #mid-msg { width: 120px; text-align: center; color: #d8b4fe; font-size: 13px; }
+    #hotbar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    #hotbar button {
+      min-width: 108px;
+      text-align: left;
+      position: relative;
+      padding-right: 28px;
+    }
+    #hotbar button.on { outline: 2px solid #e9d5ff; background: #2a1640; }
+    #hotbar button .k { color: #d8b4fe; font-size: 12px; margin-right: 4px; }
+    #hotbar button .cd {
+      position: absolute;
+      right: 8px;
+      top: 8px;
+      color: #fde68a;
+      font-size: 12px;
+    }
+    #hotbar button.equipped { box-shadow: 0 0 0 1px #facc15, 0 0 12px rgba(250, 204, 21, 0.35); }
+    #desc, #log { margin: 6px 0 0; font-size: 14px; }
+    #desc { color: var(--muted); }
+    #log { min-height: 1.3em; color: #f5e9ff; }
+    #end { inset: auto; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(420px, calc(100% - 24px)); text-align: center; }
+    #end h2 { margin: 0 0 8px; }
+    #end .row { display: flex; gap: 8px; justify-content: center; margin-top: 12px; }
+    #touch {
+      display: none;
+      position: absolute;
+      z-index: 3;
+      left: 8px; right: 8px; bottom: 8px;
+      justify-content: space-between;
+      gap: 8px;
+      pointer-events: none;
+    }
+    #touch div { display: flex; gap: 8px; pointer-events: auto; }
+    #touch button { pointer-events: auto; min-width: 52px; background: rgba(18, 10, 28, 0.9); }
+    @media (pointer: coarse), (max-width: 820px) {
+      #vw[data-mode="fight"] #touch, #vw[data-mode="over"] #touch { display: flex; }
+      #cards { grid-template-columns: 1fr; }
+      #mid-msg { display: none; }
+      #hotbar button { min-width: 44px; flex: 1; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #vw { scroll-behavior: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div id="vw" data-mode="menu">
+    <header id="top">
+      <h1>VOIDWARE <span>PVP ARENA</span></h1>
+      <div class="spacer"></div>
+      <button type="button" id="btn-restart" hidden>Restart</button>
+      <button type="button" id="btn-kits" hidden>Kits</button>
+    </header>
+    <div id="stage">
+      <canvas id="c" width="960" height="540"></canvas>
+      <div id="touch">
+        <div>
+          <button type="button" id="t-left" aria-label="Move left">Left</button>
+          <button type="button" id="t-right" aria-label="Move right">Right</button>
+          <button type="button" id="t-down" aria-label="Aim down or drop">Down</button>
+        </div>
+        <div>
+          <button type="button" id="t-jump" aria-label="Jump">Jump</button>
+          <button type="button" id="t-use" aria-label="Use item">Use</button>
+        </div>
+      </div>
+      <section id="menu">
+        <h2>Pick a kit</h2>
+        <p class="lead">Offline 1v1 against a training bot. Every item does something. Mace bonus damage only counts real downward falls — jumping upward does not.</p>
+        <div id="cards"></div>
+        <p id="controls">Move: A and D, or the arrow keys. Jump: Space or W. Drop through a platform or aim down: S. Use item: click, F, or J. Hotbar: number keys. The bot wears a chestplate and swings a Breach Mace.</p>
+      </section>
+      <section id="end" hidden>
+        <h2 id="end-title">Fight over</h2>
+        <p id="end-copy"></p>
+        <div class="row">
+          <button type="button" id="btn-rematch">Rematch</button>
+          <button type="button" id="btn-change">Change kit</button>
+        </div>
+      </section>
+    </div>
+    <section id="fightbar" hidden>
+      <div id="hud">
+        <div class="who">
+          <div class="nm" id="you-label">You</div>
+          <div class="track" aria-hidden="true"><i id="you-fill"></i><b id="you-abs"></b></div>
+        </div>
+        <div id="mid-msg">Training</div>
+        <div class="who">
+          <div class="nm" id="bot-label">Training Bot</div>
+          <div class="track" aria-hidden="true"><i id="bot-fill"></i><b id="bot-abs"></b></div>
+        </div>
+      </div>
+      <div id="hotbar"></div>
+      <p id="desc"></p>
+      <p id="log">Select a slot, then click the arena or press F.</p>
+    </section>
+  </div>
+  <script>
+(function () {
+  if (window.__vw) return;
+
+  const BLOCK = 40;
+  const WORLD_W = 1600;
+  const WORLD_H = 900;
+  const FLOOR_Y = 800;
+  const GRAVITY = 2400;
+  const STEP = 1 / 60;
+
+  const platforms = [
+    { x: 0, y: FLOOR_Y, w: WORLD_W, h: 100, floor: true },
+    { x: 70, y: 620, w: 280, h: 18, floor: false },
+    { x: 1250, y: 620, w: 280, h: 18, floor: false },
+    { x: 500, y: 500, w: 600, h: 18, floor: false },
+    { x: 660, y: 300, w: 280, h: 18, floor: false },
+    { x: 40, y: 390, w: 210, h: 18, floor: false },
+    { x: 1350, y: 390, w: 210, h: 18, floor: false },
+  ];
+
+  const KITS = {
+    mace: {
+      id: "mace",
+      name: "Mace PvP",
+      summary: "Close smashes, armor pierce, and a wind-burst launcher.",
+      items: [
+        { id: "breach_mace", kind: "mace", name: "Breach Mace", breach: 3, density: 0, kb: 260, lift: 130, windBurst: false,
+          desc: "Close hit. A standing hit is 5 before armor. Falling — not jumping up — adds damage. Breach III ignores 45% of a chestplate." },
+        { id: "wind_mace", kind: "mace", name: "Wind Mace", breach: 0, density: 0, kb: 500, lift: 280, windBurst: true,
+          desc: "Same fall smash, harder knockback. A clean hit launches you upward for another dive." },
+        { id: "wind_charge", kind: "wind", name: "Wind Charge",
+          desc: "Almost no damage, strong area knockback. Hold S to aim down and blast the ground to rocket-jump." },
+        { id: "spear", kind: "spear", name: "Lunge Spear",
+          desc: "Dash forward and poke for 7 damage at medium range. No fall bonus." },
+        { id: "gapple", kind: "gapple", name: "Golden Apple",
+          desc: "Heals 6 now, adds 4 absorption for 10 seconds, then regenerates 4 more." },
+      ],
+    },
+    elytra: {
+      id: "elytra",
+      name: "Elytra Mace",
+      summary: "Glide, firework boost, and a Density smash. Chestplate turns flight off.",
+      items: [
+        { id: "density_mace", kind: "mace", name: "Mace", breach: 0, density: 2, kb: 280, lift: 150, windBurst: false,
+          desc: "Fall smash. Density II adds damage for each block you really fall. An upward jump adds nothing." },
+        { id: "elytra", kind: "elytra", name: "Elytra",
+          desc: "In the air, use this or press Space again to glide. You still sink, and you keep your speed. Landing closes the wings." },
+        { id: "firework", kind: "firework", name: "Fireworks",
+          desc: "While gliding, pushes you forward and up. The ground run-speed cap does not cancel this." },
+        { id: "wind_charge_e", kind: "wind", name: "Wind Charge",
+          desc: "Knockback blast. Hold S and fire into the ground to rocket-jump." },
+        { id: "gapple_e", kind: "gapple", name: "Golden Apple",
+          desc: "Heals 6 now, adds 4 absorption for 10 seconds, then regenerates 4 more." },
+        { id: "chest", kind: "chest", name: "Chestplate",
+          desc: "Equip for 40% less damage taken. While it is on, Elytra will not open." },
+      ],
+    },
+    tnt: {
+      id: "tnt",
+      name: "TNT Cart",
+      summary: "Bolts, fire, rolling explosives, and a pull with no damage.",
+      items: [
+        { id: "crossbow", kind: "crossbow", name: "Crossbow",
+          desc: "Fires a bolt for 8 damage. If it hits a TNT cart, the cart detonates." },
+        { id: "flint", kind: "flint", name: "Flint and Steel",
+          desc: "Lights a fire patch that burns anyone in it, and lights the fuse on a nearby TNT cart." },
+        { id: "cart", kind: "cart", name: "TNT Cart",
+          desc: "Rolls across the arena. It explodes if ignited, shot, or it touches the enemy after a short arm time. You take damage if you are close." },
+        { id: "rod", kind: "rod", name: "Fishing Rod",
+          desc: "Hooks the enemy and pulls them toward you. The hook itself deals no damage." },
+        { id: "gapple_t", kind: "gapple", name: "Golden Apple",
+          desc: "Heals 6 now, adds 4 absorption for 10 seconds, then regenerates 4 more." },
+      ],
+    },
+  };
+
+  const root = document.getElementById("vw");
+  const canvas = document.getElementById("c");
+  const ctx = canvas.getContext("2d");
+  const menu = document.getElementById("menu");
+  const cards = document.getElementById("cards");
+  const fightbar = document.getElementById("fightbar");
+  const endEl = document.getElementById("end");
+  const endTitle = document.getElementById("end-title");
+  const endCopy = document.getElementById("end-copy");
+  const hotbar = document.getElementById("hotbar");
+  const descEl = document.getElementById("desc");
+  const logEl = document.getElementById("log");
+  const btnRestart = document.getElementById("btn-restart");
+  const btnKits = document.getElementById("btn-kits");
+  if (!root || !canvas || !ctx || !menu || !cards || !fightbar || !hotbar || !descEl || !logEl) return;
+
+  const keys = new Set();
+  const edges = new Set();
+  let forceKeys = null;
+  const touch = { left: false, right: false, jump: false, down: false, use: false, up: false, jumpEdge: false, downEdge: false, useEdge: false };
+  let mouseAim = null;
+  let mode = "menu";
+  let hitStop = 0;
+  let shake = 0;
+  let cam = { x: 200, y: 260 };
+  let view = { w: 960, h: 540, dpr: 1 };
+  let audioCtx = null;
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const stars = Array.from({ length: 70 }, () => ({
+    x: Math.random() * WORLD_W,
+    y: Math.random() * FLOOR_Y,
+    r: Math.random() * 1.5 + 0.3,
+    a: Math.random() * 0.45 + 0.15,
+  }));
+
+  const world = { bolts: [], winds: [], carts: [], fires: [], hooks: [], parts: [], texts: [] };
+
+  function makeBody(opts) {
+    return Object.assign({
+      x: 180, y: FLOOR_Y - 46, w: 30, h: 46, vx: 0, vy: 0, facing: 1,
+      grounded: true, gliding: false, chest: false,
+      fallDist: 0, peakDownVy: 0, smashFall: 0, smashVy: 0, smashWindow: 0, wasAir: false,
+      coyote: 0.1, jumpBuf: 0, dropT: 0, airTime: 0, lungeT: 0, lungeHit: false, swing: 0, boostT: 0,
+      hp: 20, maxHp: 20, absorption: 0, absorbT: 0, regenLeft: 0, regenAcc: 0, iFrame: 0,
+      alive: true, isBot: false, slot: 0, cd: {}, kit: KITS.mace,
+      aimX: 1, aimY: 0, color: "#c4b5fd", edge: "#e9d5ff", name: "You",
+      ai: { retreat: 0, strafeT: 0, strafeDir: 1, think: 0.4, windup: 0, eatDelay: 1, wantSmash: 0 },
+    }, opts);
+  }
+
+  const player = makeBody({ x: 180, facing: 1, name: "You", color: "#c4b5fd", edge: "#ddd6fe" });
+  const bot = makeBody({
+    x: 1320, facing: -1, isBot: true, chest: true, name: "Training Bot",
+    color: "#fb7185", edge: "#fecdd3", kit: KITS.mace,
+  });
+
+  function log(msg) {
+    if (logEl) logEl.textContent = msg;
+  }
+
+  function setMode(next) {
+    mode = next;
+    root.dataset.mode = next;
+    menu.hidden = next !== "menu";
+    fightbar.hidden = next === "menu";
+    endEl.hidden = next !== "over";
+    btnRestart.hidden = next === "menu";
+    btnKits.hidden = next === "menu";
+  }
+
+  function norm(x, y) {
+    const m = Math.hypot(x, y);
+    if (m < 0.001) return { x: 1, y: 0 };
+    return { x: x / m, y: y / m };
+  }
+
+  function rectsOverlap(a, b) {
+    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  }
+
+  function pointIn(r, x, y, pad) {
+    const m = pad || 0;
+    return x >= r.x - m && x <= r.x + r.w + m && y >= r.y - m && y <= r.y + r.h + m;
+  }
+
+  function hitsPlat(x, y) {
+    return platforms.some((pl) => x >= pl.x && x <= pl.x + pl.w && y >= pl.y && y <= pl.y + pl.h);
+  }
+
+  function other(p) { return p.isBot ? player : bot; }
+
+  function armorMul(victim, breachLevel) {
+    if (!victim.chest) return 1;
+    const ignore = Math.min(0.15 * (breachLevel || 0), 0.75);
+    const dr = 0.4 * (1 - ignore);
+    return 1 - dr;
+  }
+
+  function rawMaceDamage(blocks, vyDown, density) {
+    let dmg = 5;
+    if (blocks >= 1.15) {
+      const extra = blocks - 1;
+      const a = Math.min(extra, 3);
+      const b = Math.min(Math.max(extra - 3, 0), 5);
+      const c = Math.max(extra - 8, 0);
+      let bonus = a * 3.2 + b * 2 + c * 1.1;
+      const speedMul = 1 + Math.min(Math.max(vyDown - 200, 0) / 1600, 0.5);
+      bonus *= speedMul;
+      dmg += bonus;
+      if (density) dmg += density * 0.5 * extra;
+    }
+    return Math.min(42, dmg);
+  }
+
+  function maceStats(p, item) {
+    let blocks = 0;
+    let vyDown = 0;
+    const descending = !p.grounded && p.vy > 50 && p.fallDist >= 1.15;
+    const landed = p.smashWindow > 0 && p.smashFall >= 1.15;
+    if (descending) {
+      blocks = p.fallDist;
+      vyDown = Math.max(p.vy, p.peakDownVy);
+    } else if (landed) {
+      blocks = p.smashFall;
+      vyDown = p.smashVy;
+    }
+    return {
+      dmg: rawMaceDamage(blocks, vyDown, item.density || 0),
+      smash: blocks >= 1.15,
+      blocks: blocks,
+      vyDown: vyDown,
+    };
+  }
+
+  function unlockAudio() {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    if (!audioCtx) audioCtx = new AC();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+  }
+
+  function tone(freq, dur, type, vol) {
+    if (!audioCtx) return;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = type || "square";
+    o.frequency.value = freq;
+    g.gain.value = vol == null ? 0.03 : vol;
+    o.connect(g);
+    g.connect(audioCtx.destination);
+    const t0 = audioCtx.currentTime;
+    g.gain.setValueAtTime(g.gain.value, t0);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.start(t0);
+    o.stop(t0 + dur);
+  }
+
+  function burst(x, y, color, n, speed) {
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const s = speed * (0.35 + Math.random());
+      world.parts.push({
+        x: x, y: y, vx: Math.cos(a) * s, vy: Math.sin(a) * s,
+        life: 0.35 + Math.random() * 0.35, color: color, r: 1.5 + Math.random() * 2.2,
+      });
+    }
+    if (world.parts.length > 220) world.parts.splice(0, world.parts.length - 220);
+  }
+
+  function floatText(x, y, text, color) {
+    world.texts.push({ x: x, y: y, text: text, life: 0.85, color: color || "#fff" });
+  }
+
+  function clearWorld() {
+    world.bolts.length = 0;
+    world.winds.length = 0;
+    world.carts.length = 0;
+    world.fires.length = 0;
+    world.hooks.length = 0;
+    world.parts.length = 0;
+    world.texts.length = 0;
+    hitStop = 0;
+    shake = 0;
+  }
+
+  function placeFighter(p, x, facing) {
+    p.x = x;
+    p.y = FLOOR_Y - p.h;
+    p.vx = 0;
+    p.vy = 0;
+    p.facing = facing;
+    p.grounded = true;
+    p.gliding = false;
+    p.fallDist = 0;
+    p.peakDownVy = 0;
+    p.smashFall = 0;
+    p.smashVy = 0;
+    p.smashWindow = 0;
+    p.wasAir = false;
+    p.coyote = 0.1;
+    p.jumpBuf = 0;
+    p.dropT = 0;
+    p.airTime = 0;
+    p.lungeT = 0;
+    p.lungeHit = false;
+    p.swing = 0;
+    p.boostT = 0;
+    p.hp = p.maxHp;
+    p.absorption = 0;
+    p.absorbT = 0;
+    p.regenLeft = 0;
+    p.regenAcc = 0;
+    p.iFrame = 0;
+    p.alive = true;
+    p.cd = {};
+    p.aimX = facing;
+    p.aimY = 0;
+    p.ai.retreat = 0;
+    p.ai.windup = 0;
+    p.ai.wantSmash = 0;
+  }
+
+  function resetRound() {
+    player.chest = false;
+    placeFighter(player, 180, 1);
+    bot.chest = true;
+    bot.kit = KITS.mace;
+    bot.slot = 0;
+    placeFighter(bot, 1320, -1);
+    clearWorld();
+  }
+
+  function onDeath(victim) {
+    if (mode !== "fight") return;
+    setMode("over");
+    const youWin = victim.isBot;
+    endTitle.textContent = youWin ? "You win" : "You lost";
+    endCopy.textContent = youWin
+      ? "The training bot is down. Rematch to try another kit, or stay and run it back."
+      : "The bot knocked you out. Rematch keeps this kit.";
+    tone(youWin ? 520 : 90, 0.18, "triangle", 0.05);
+  }
+
+  function applyDamage(victim, amount, opt) {
+    opt = opt || {};
+    if (!victim.alive) return false;
+    if (victim.iFrame > 0 && !opt.pierceI) return false;
+    const mul = opt.noArmor ? 1 : armorMul(victim, opt.breach || 0);
+    let amt = Math.max(0, amount) * mul;
+    const shown = amt;
+    if (victim.absorption > 0) {
+      const use = Math.min(victim.absorption, amt);
+      victim.absorption -= use;
+      amt -= use;
+    }
+    victim.hp -= amt;
+    if (opt.iTime) victim.iFrame = opt.iTime;
+    if (opt.kb) {
+      const dir = Math.sign((victim.x + victim.w / 2) - (opt.fromX != null ? opt.fromX : victim.x)) || opt.facing || 1;
+      victim.vx = dir * opt.kb;
+      if (opt.lift) victim.vy = Math.min(victim.vy, -opt.lift);
+      victim.grounded = false;
+    }
+    if (victim.isBot) victim.ai.retreat = 0.45;
+    floatText(victim.x, victim.y - 8, shown.toFixed(1), opt.breach ? "#e9d5ff" : "#fff");
+    burst(victim.x + victim.w / 2, victim.y + 16, "#f5d0fe", 8, 140);
+    tone(160 + Math.min(80, shown * 4), 0.07, "sawtooth", 0.035);
+    if (!reduceMotion) shake = Math.min(14, shake + Math.min(8, shown * 0.25));
+    if (victim.hp <= 0) {
+      victim.hp = 0;
+      victim.alive = false;
+      victim.gliding = false;
+      onDeath(victim);
+    }
+    return true;
+  }
+
+  function meleeHit(a, b, reachX, reachY) {
+    const dx = (b.x + b.w / 2) - (a.x + a.w / 2);
+    const dy = (b.y + b.h / 2) - (a.y + a.h / 2);
+    if (dx * a.facing < -8 && Math.abs(dx) > 18) return false;
+    return Math.abs(dx) <= reachX && Math.abs(dy) <= reachY;
+  }
+
+  function consumeFall(p) {
+    p.fallDist = 0;
+    p.peakDownVy = 0;
+    p.smashWindow = 0;
+    p.smashFall = 0;
+    p.smashVy = 0;
+  }
+
+  function currentItem(p) {
+    return p.kit.items[p.slot] || p.kit.items[0];
+  }
+
+  function setAimFrom(p, input) {
+    if (input && input.aim) {
+      const n = norm(input.aim.x - (p.x + p.w / 2), input.aim.y - (p.y + p.h / 2));
+      p.aimX = n.x;
+      p.aimY = n.y;
+      return;
+    }
+    const down = input && input.down;
+    const up = input && input.up;
+    if (down && !up) {
+      const n = norm(p.facing * 0.2, 1);
+      p.aimX = n.x;
+      p.aimY = n.y;
+    } else if (up && !down) {
+      const n = norm(p.facing * 0.45, -1);
+      p.aimX = n.x;
+      p.aimY = n.y;
+    } else {
+      p.aimX = p.facing;
+      p.aimY = -0.08;
+    }
+  }
+
+  function useItem(p) {
+    if (!p.alive) return false;
+    const item = currentItem(p);
+    if (!item) return false;
+    if ((p.cd[item.id] || 0) > 0) return false;
+    if (item.kind === "mace") return swingMace(p, item);
+    if (item.kind === "wind") return throwWind(p, item);
+    if (item.kind === "spear") return startLunge(p, item);
+    if (item.kind === "gapple") return eatApple(p, item);
+    if (item.kind === "elytra") return tryGlide(p, item);
+    if (item.kind === "firework") return useFirework(p, item);
+    if (item.kind === "chest") return toggleChest(p, item);
+    if (item.kind === "crossbow") return fireBow(p, item);
+    if (item.kind === "flint") return ignite(p, item);
+    if (item.kind === "cart") return spawnCart(p, item);
+    if (item.kind === "rod") return castRod(p, item);
+    return false;
+  }
+
+  function swingMace(p, item) {
+    const foe = other(p);
+    p.swing = 0.12;
+    if (!foe || !foe.alive || !meleeHit(p, foe, 64, 48)) {
+      p.cd[item.id] = 0.26;
+      log(item.name + " missed. Step closer and face them.");
+      return false;
+    }
+    const st = maceStats(p, item);
+    const mul = armorMul(foe, item.breach || 0);
+    const dealt = st.dmg * mul;
+    const hit = applyDamage(foe, st.dmg, {
+      breach: item.breach || 0,
+      kb: item.kb,
+      lift: item.lift,
+      fromX: p.x + p.w / 2,
+      facing: p.facing,
+      iTime: 0.34,
+    });
+    if (!hit) {
+      p.cd[item.id] = 0.16;
+      log("They shrugged that off — still recovering.");
+      return false;
+    }
+    consumeFall(p);
+    if (item.windBurst) {
+      const boost = 700 + (st.smash ? st.blocks * 26 : 50);
+      p.vy = -boost;
+      p.vx += p.facing * 70;
+      p.grounded = false;
+      p.gliding = false;
+      burst(p.x + p.w / 2, p.y + p.h, "#67e8f9", 14, 220);
+      log("Wind Burst. " + item.name + " dealt " + dealt.toFixed(1) + " (raw " + st.dmg.toFixed(1) + ", fall " + st.blocks.toFixed(1) + ").");
+    } else {
+      const tag = st.smash ? " smash" : " ground hit";
+      log(item.name + tag + " dealt " + dealt.toFixed(1) + " (raw " + st.dmg.toFixed(1) + " before armor, fall " + st.blocks.toFixed(1) + ").");
+    }
+    if (st.smash && st.blocks >= 4) hitStop = 0.04;
+    p.cd[item.id] = 0.52;
+    tone(st.smash ? 90 : 200, st.smash ? 0.12 : 0.06, "square", 0.04);
+    return true;
+  }
+
+  function throwWind(p, item) {
+    p.cd[item.id] = 0.55;
+    const ox = p.x + p.w / 2 + p.aimX * 16;
+    const oy = p.y + p.h / 2 + p.aimY * 16;
+    world.winds.push({
+      owner: p, x: ox, y: oy, vx: p.aimX * 560, vy: p.aimY * 560, life: 0.85,
+    });
+    log(p.aimY > 0.6 ? "Wind Charge aimed down." : "Wind Charge thrown.");
+    tone(300, 0.05, "sine", 0.03);
+    return true;
+  }
+
+  function explodeWind(x, y, owner) {
+    burst(x, y, "#a5f3fc", 18, 260);
+    tone(240, 0.08, "triangle", 0.04);
+    const radius = 130;
+    for (const f of [player, bot]) {
+      if (!f.alive) continue;
+      const dx = (f.x + f.w / 2) - x;
+      const dy = (f.y + f.h / 2) - y;
+      const d = Math.max(8, Math.hypot(dx, dy));
+      if (d > radius) continue;
+      const falloff = 1 - d / radius;
+      f.vx += (dx / d) * 900 * falloff;
+      f.vy += (dy / d) * 900 * falloff;
+      f.grounded = false;
+      f.gliding = false;
+      if (f !== owner && d < 78) {
+        applyDamage(f, 1, { breach: 0, fromX: x, iTime: 0.2 });
+      }
+    }
+  }
+
+  function startLunge(p, item) {
+    p.cd[item.id] = 1.05;
+    p.lungeT = 0.16;
+    p.lungeHit = false;
+    p.vx = p.facing * 820;
+    p.grounded = false;
+    log("Lunge.");
+    tone(180, 0.05, "square", 0.03);
+    return true;
+  }
+
+  function eatApple(p, item) {
+    p.cd[item.id] = 2.4;
+    const before = p.hp;
+    p.hp = Math.min(p.maxHp, p.hp + 6);
+    p.absorption = Math.min(8, p.absorption + 4);
+    p.absorbT = 10;
+    p.regenLeft += 4;
+    burst(p.x + p.w / 2, p.y, "#fde68a", 10, 80);
+    tone(640, 0.1, "sine", 0.04);
+    log("Golden Apple: +" + (p.hp - before).toFixed(0) + " health, +4 absorption, regen coming.");
+    if (p.isBot) p.slot = 0;
+    return true;
+  }
+
+  function tryGlide(p) {
+    if (p.chest) {
+      p.gliding = false;
+      log("Chestplate is equipped, so Elytra stays closed.");
+      return false;
+    }
+    if (p.grounded) {
+      log("Jump first. Then press Space again, or use Elytra, while you are in the air.");
+      return false;
+    }
+    p.gliding = !p.gliding;
+    if (p.gliding && Math.abs(p.vx) < 100) p.vx = p.facing * 170;
+    log(p.gliding ? "Gliding. Fireworks will boost you." : "Elytra closed.");
+    return true;
+  }
+
+  function useFirework(p, item) {
+    if (!p.gliding) {
+      log("Fireworks only boost you while the Elytra is open.");
+      return false;
+    }
+    p.cd[item.id] = 0.48;
+    p.boostT = 0.75;
+    p.vx += p.facing * 680;
+    p.vy = Math.min(p.vy, 0) - 360;
+    const max = 1200;
+    const sp = Math.hypot(p.vx, p.vy);
+    if (sp > max) {
+      p.vx *= max / sp;
+      p.vy *= max / sp;
+    }
+    burst(p.x, p.y + 20, "#fb7185", 8, 160);
+    burst(p.x - p.facing * 10, p.y + 24, "#fde68a", 6, 90);
+    tone(520, 0.09, "sawtooth", 0.03);
+    log("Firework boost.");
+    return true;
+  }
+
+  function toggleChest(p, item) {
+    p.cd[item.id] = 0.25;
+    p.chest = !p.chest;
+    if (p.chest) {
+      p.gliding = false;
+      log("Chestplate on. You take less damage. Elytra is disabled.");
+    } else {
+      log("Chestplate off. Elytra can open again.");
+    }
+    return true;
+  }
+
+  function fireBow(p, item) {
+    p.cd[item.id] = 0.8;
+    world.bolts.push({
+      owner: p,
+      x: p.x + p.w / 2 + p.aimX * 22,
+      y: p.y + p.h / 2 + p.aimY * 12,
+      vx: p.aimX * 920,
+      vy: p.aimY * 920,
+      life: 1.25,
+      dead: false,
+    });
+    tone(700, 0.04, "square", 0.025);
+    log("Crossbow fired.");
+    return true;
+  }
+
+  function ignite(p, item) {
+    p.cd[item.id] = 0.45;
+    const x = p.x + p.w / 2 + p.facing * 52;
+    const y = p.y + p.h - 8;
+    world.fires.push({ x: x - 34, y: y - 28, w: 72, h: 36, life: 3.1, tick: 0.05 });
+    let lit = 0;
+    for (const c of world.carts) {
+      if (!c.alive || c.fuse >= 0) continue;
+      const dx = (c.x + c.w / 2) - x;
+      const dy = (c.y + c.h / 2) - (p.y + p.h / 2);
+      if (Math.hypot(dx, dy) < 140) {
+        c.fuse = 1.15;
+        lit++;
+      }
+    }
+    tone(120, 0.08, "sawtooth", 0.03);
+    log(lit ? "Lit " + lit + " TNT cart fuse" + (lit > 1 ? "s" : "") + " and a fire patch." : "Fire patch lit. It burns anyone standing in it.");
+    return true;
+  }
+
+  function spawnCart(p, item) {
+    const mine = world.carts.filter((c) => c.owner === p && c.alive);
+    if (mine.length >= 2) {
+      log("Two TNT carts are already out.");
+      return false;
+    }
+    p.cd[item.id] = 0.7;
+    world.carts.push({
+      owner: p,
+      x: p.x + p.facing * 40,
+      y: p.y + 8,
+      w: 38,
+      h: 26,
+      vx: p.facing * 210,
+      vy: 0,
+      fuse: -1,
+      arm: 0.5,
+      alive: true,
+    });
+    log("TNT cart rolling. Ignite it, shoot it, or let it touch the enemy.");
+    return true;
+  }
+
+  function explodeCart(c) {
+    if (!c.alive) return;
+    c.alive = false;
+    const x = c.x + c.w / 2;
+    const y = c.y + c.h / 2;
+    burst(x, y, "#fb7185", 22, 280);
+    burst(x, y, "#fde68a", 10, 140);
+    if (!reduceMotion) shake = 12;
+    hitStop = 0.05;
+    tone(70, 0.2, "triangle", 0.06);
+    for (const f of [player, bot]) {
+      if (!f.alive) continue;
+      const dx = (f.x + f.w / 2) - x;
+      const dy = (f.y + f.h / 2) - y;
+      const d = Math.hypot(dx, dy);
+      if (d > 150) continue;
+      const falloff = 1 - d / 150;
+      applyDamage(f, 14 * falloff, {
+        pierceI: true,
+        breach: 0,
+        kb: 540 * falloff,
+        lift: 300 * falloff,
+        fromX: x,
+        iTime: 0.35,
+      });
+    }
+    log("TNT cart exploded.");
+  }
+
+  function castRod(p, item) {
+    p.cd[item.id] = 1.15;
+    world.hooks = world.hooks.filter((h) => h.owner !== p);
+    world.hooks.push({
+      owner: p,
+      x: p.x + p.w / 2,
+      y: p.y + 16,
+      vx: p.aimX * 740,
+      vy: p.aimY * 740,
+      state: "fly",
+      life: 0.55,
+      pull: 0,
+    });
+    log("Line cast.");
+    return true;
+  }
+
+  function standingOnFloor(p) {
+    const feet = p.y + p.h;
+    return platforms.some((pl) => pl.floor && Math.abs(feet - pl.y) <= 2 && p.x + p.w > pl.x + 2 && p.x < pl.x + pl.w - 2);
+  }
+
+  function clampX(p) {
+    if (p.x < 0) { p.x = 0; if (p.vx < 0) p.vx = 0; }
+    if (p.x + p.w > WORLD_W) { p.x = WORLD_W - p.w; if (p.vx > 0) p.vx = 0; }
+  }
+
+  function updateFall(p, dt) {
+    if (p.smashWindow > 0) p.smashWindow -= dt;
+    if (p.grounded) {
+      if (p.wasAir) {
+        if (p.fallDist >= 1.15) {
+          p.smashFall = p.fallDist;
+          p.smashVy = p.peakDownVy;
+          p.smashWindow = 0.18;
+        } else {
+          p.smashFall = 0;
+          p.smashVy = 0;
+          p.smashWindow = 0;
+        }
+      }
+      p.fallDist = 0;
+      p.peakDownVy = 0;
+      p.wasAir = false;
+      return;
+    }
+    p.wasAir = true;
+    if (p.vy < -30) {
+      p.fallDist = 0;
+      p.peakDownVy = 0;
+      if (p.vy < -200) {
+        p.smashWindow = 0;
+        p.smashFall = 0;
+        p.smashVy = 0;
+      }
+      return;
+    }
+    if (p.vy > 40) {
+      p.fallDist += (p.vy * dt) / BLOCK;
+      if (p.vy > p.peakDownVy) p.peakDownVy = p.vy;
+    }
+  }
+
+  function stepFighter(p, input, dt) {
+    input = input || {};
+    p.dropT = Math.max(0, p.dropT - dt);
+    p.swing = Math.max(0, p.swing - dt);
+    if (p.boostT > 0) p.boostT -= dt;
+    if (p.chest) p.gliding = false;
+    const jumpEdge = !!input.jumpEdge;
+    const downEdge = !!input.downEdge;
+    if (jumpEdge) p.jumpBuf = 0.12;
+    if (p.jumpBuf > 0) p.jumpBuf -= dt;
+
+    const cap = 310;
+    if (p.lungeT > 0) {
+      p.lungeT -= dt;
+      p.vx = p.facing * 820;
+    } else {
+      const accel = p.grounded ? 3400 : 2200;
+      if (input.wish) {
+        p.facing = input.wish > 0 ? 1 : -1;
+        const along = p.vx * p.facing;
+        if (along < cap) {
+          p.vx += p.facing * accel * dt;
+          if (p.vx * p.facing > cap) p.vx = p.facing * cap;
+        }
+      } else if (p.grounded && !p.gliding && p.boostT <= 0) {
+        p.vx *= Math.exp(-14 * dt);
+        if (Math.abs(p.vx) < 10) p.vx = 0;
+      }
+      if (!p.grounded) {
+        const drag = p.gliding || p.boostT > 0 ? 0.18 : 0.7;
+        p.vx *= Math.exp(-drag * dt);
+      } else if (p.boostT <= 0 && Math.abs(p.vx) > cap) {
+        const sign = Math.sign(p.vx);
+        const excess = Math.abs(p.vx) - cap;
+        p.vx = sign * (cap + excess * Math.exp(-9 * dt));
+      }
+    }
+
+    if (p.grounded) {
+      p.coyote = 0.1;
+      p.airTime = 0;
+    } else {
+      p.coyote = Math.max(0, p.coyote - dt);
+      p.airTime += dt;
+    }
+
+    const hasElytra = p.kit.items.some((it) => it.kind === "elytra");
+    if (p.jumpBuf > 0 && (p.grounded || p.coyote > 0) && p.dropT <= 0) {
+      p.vy = -640;
+      p.grounded = false;
+      p.coyote = 0;
+      p.jumpBuf = 0;
+      p.gliding = false;
+      tone(420, 0.05, "square", 0.02);
+    } else if (jumpEdge && !p.grounded && p.coyote <= 0 && hasElytra && !p.chest && p.airTime > 0.06 && !p.gliding) {
+      p.gliding = true;
+      if (Math.abs(p.vx) < 100) p.vx = p.facing * 170;
+      log("Elytra open. Steer with A and D. Fireworks boost.");
+    }
+
+    if (downEdge && p.grounded && !standingOnFloor(p)) p.dropT = 0.2;
+
+    if (p.gliding) {
+      p.vy += GRAVITY * 0.16 * dt;
+      if (p.vy > 150) p.vy = 150;
+    } else {
+      p.vy += GRAVITY * dt;
+      if (p.vy > 1400) p.vy = 1400;
+    }
+
+    p.x += p.vx * dt;
+    clampX(p);
+
+    const prevBottom = p.y + p.h;
+    p.y += p.vy * dt;
+    let landed = false;
+    if (p.dropT <= 0 && p.vy >= 0) {
+      for (let i = 0; i < platforms.length; i++) {
+        const pl = platforms[i];
+        if (p.x + p.w <= pl.x + 2 || p.x >= pl.x + pl.w - 2) continue;
+        if (prevBottom <= pl.y + 0.75 && p.y + p.h >= pl.y) {
+          p.y = pl.y - p.h;
+          p.vy = 0;
+          landed = true;
+          p.gliding = false;
+          break;
+        }
+      }
+    }
+    p.grounded = landed;
+
+    if (p.y > WORLD_H + 60 && p.alive) {
+      p.x = p.isBot ? 1320 : 180;
+      p.y = FLOOR_Y - p.h;
+      p.vx = 0;
+      p.vy = 0;
+      p.grounded = true;
+      if (mode === "fight") applyDamage(p, 6, { pierceI: true, noArmor: true, iTime: 0.4 });
+    }
+
+    updateFall(p, dt);
+
+    if (p.lungeT > 0 && !p.lungeHit && mode === "fight") {
+      const foe = other(p);
+      if (foe && foe.alive && meleeHit(p, foe, 112, 52)) {
+        const ok = applyDamage(foe, 7, {
+          breach: 0, kb: 360, lift: 110, fromX: p.x + p.w / 2, facing: p.facing, iTime: 0.3,
+        });
+        if (ok) {
+          p.lungeHit = true;
+          log("Lunge Spear dealt " + (7 * armorMul(foe, 0)).toFixed(1) + ".");
+        }
+      }
+    }
+  }
+
+  function tickStatus(p, dt) {
+    for (const id in p.cd) {
+      if (p.cd[id] > 0) p.cd[id] = Math.max(0, p.cd[id] - dt);
+    }
+    if (p.iFrame > 0) p.iFrame = Math.max(0, p.iFrame - dt);
+    if (p.absorbT > 0) {
+      p.absorbT -= dt;
+      if (p.absorbT <= 0) p.absorption = 0;
+    }
+    if (p.regenLeft > 0 && p.alive) {
+      p.regenAcc += dt;
+      if (p.regenAcc >= 0.8) {
+        p.regenAcc -= 0.8;
+        p.regenLeft -= 1;
+        p.hp = Math.min(p.maxHp, p.hp + 1);
+      }
+    }
+  }
+
+  function blankInput() {
+    return { wish: 0, jumpEdge: false, downEdge: false, down: false, up: false, aim: null };
+  }
+
+  function readPlayerInput() {
+    const held = forceKeys || keys;
+    const left = held.has("KeyA") || held.has("ArrowLeft") || touch.left;
+    const right = held.has("KeyD") || held.has("ArrowRight") || touch.right;
+    const down = held.has("KeyS") || held.has("ArrowDown") || touch.down;
+    const up = (held.has("KeyW") || held.has("ArrowUp") || touch.up) && !down;
+    const jumpEdge = edges.has("Space") || edges.has("KeyW") || edges.has("ArrowUp") || touch.jumpEdge;
+    const downEdge = edges.has("KeyS") || edges.has("ArrowDown") || touch.downEdge;
+    const useEdge = edges.has("KeyF") || edges.has("KeyJ") || edges.has("KeyK") || edges.has("Mouse0") || touch.useEdge;
+    const kitLen = player.kit.items.length;
+    for (let i = 0; i < kitLen; i++) {
+      if (edges.has("Digit" + (i + 1))) player.slot = i;
+    }
+    if (edges.has("KeyR") && mode !== "menu") resetFight();
+    return {
+      wish: (right ? 1 : 0) - (left ? 1 : 0),
+      jumpEdge: jumpEdge,
+      downEdge: downEdge,
+      down: down,
+      up: up,
+      useEdge: useEdge,
+      aim: mouseAim,
+    };
+  }
+
+  function groundAt(x, feetY) {
+    return platforms.some((pl) => x >= pl.x && x <= pl.x + pl.w && pl.y >= feetY - 10 && pl.y <= feetY + 30);
+  }
+
+  function botInput(dt) {
+    const input = blankInput();
+    if (!bot.alive || !player.alive) return input;
+    const pcx = player.x + player.w / 2;
+    const bcx = bot.x + bot.w / 2;
+    const dx = pcx - bcx;
+    const adx = Math.abs(dx);
+    const dy = player.y - bot.y;
+    bot.ai.retreat -= dt;
+    bot.ai.strafeT -= dt;
+    bot.ai.think -= dt;
+    bot.ai.eatDelay -= dt;
+    bot.ai.wantSmash -= dt;
+    if (bot.ai.think <= 0) {
+      bot.ai.think = 0.55 + Math.random() * 0.45;
+      if (Math.random() < 0.3 && adx < 260) {
+        bot.ai.strafeT = 0.18 + Math.random() * 0.2;
+        bot.ai.strafeDir = Math.random() < 0.5 ? -1 : 1;
+      }
+    }
+    const gappleSlot = bot.kit.items.findIndex((it) => it.kind === "gapple");
+    if (bot.hp <= 8 && bot.ai.eatDelay <= 0 && gappleSlot >= 0 && (bot.cd[bot.kit.items[gappleSlot].id] || 0) <= 0) {
+      bot.slot = gappleSlot;
+      input.use = true;
+      bot.ai.eatDelay = 2.8;
+      setAimFrom(bot, input);
+      return input;
+    }
+    if (bot.ai.retreat > 0) input.wish = dx === 0 ? -bot.facing : -Math.sign(dx);
+    else if (bot.ai.strafeT > 0) input.wish = bot.ai.strafeDir;
+    else if (adx > 52) input.wish = Math.sign(dx) || bot.facing;
+    else input.wish = Math.sign(dx) || bot.facing;
+
+    if (bot.grounded && input.wish && dy > -20) {
+      const probe = bcx + input.wish * 26;
+      if (!groundAt(probe, bot.y + bot.h + 6)) {
+        if (adx > 80 && Math.sign(dx) === input.wish) input.jumpEdge = true;
+        else input.wish = 0;
+      }
+    }
+    if (bot.grounded && dy < -70 && adx < 220 && bot.ai.retreat <= 0) input.jumpEdge = true;
+
+    const inRange = meleeHit(bot, player, 64, 50);
+    if (bot.ai.retreat <= 0 && (bot.cd.breach_mace || 0) <= 0) {
+      if (inRange && bot.grounded && Math.random() < 0.012) {
+        input.jumpEdge = true;
+        bot.ai.wantSmash = 0.55;
+      }
+      if (bot.ai.wantSmash > 0 && bot.vy > 70 && meleeHit(bot, player, 70, 56)) {
+        bot.slot = 0;
+        input.use = true;
+        bot.ai.wantSmash = 0;
+      } else if (inRange) {
+        bot.ai.windup += dt;
+        if (bot.ai.windup > 0.22) {
+          bot.slot = 0;
+          input.use = true;
+          bot.ai.windup = 0;
+        }
+      } else bot.ai.windup = 0;
+    }
+    if (adx > 8) bot._faceLock = dx > 0 ? 1 : -1;
+    setAimFrom(bot, input);
+    return input;
+  }
+
+  function separate(dt) {
+    if (!player.alive || !bot.alive) return;
+    if (!rectsOverlap(player, bot)) return;
+    const dx = (bot.x + bot.w / 2) - (player.x + player.w / 2);
+    const dir = dx === 0 ? 1 : Math.sign(dx);
+    const push = 80 * dt;
+    player.x -= dir * push;
+    bot.x += dir * push;
+    clampX(player);
+    clampX(bot);
+  }
+
+  function stepProjectiles(dt) {
+    for (const b of world.bolts) {
+      b.life -= dt;
+      b.vy += 200 * dt;
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+      if (b.life <= 0 || hitsPlat(b.x, b.y)) b.dead = true;
+      if (!b.dead) {
+        for (const c of world.carts) {
+          if (c.alive && pointIn(c, b.x, b.y, 2)) {
+            c.fuse = 0.06;
+            b.dead = true;
+            log("Bolt struck a TNT cart.");
+          }
+        }
+      }
+      if (!b.dead) {
+        const foe = other(b.owner);
+        if (foe && foe.alive && pointIn(foe, b.x, b.y, 2)) {
+          applyDamage(foe, 8, { breach: 0, kb: 240, lift: 90, fromX: b.x, facing: Math.sign(b.vx) || 1, iTime: 0.28 });
+          b.dead = true;
+          log("Crossbow dealt " + (8 * armorMul(foe, 0)).toFixed(1) + ".");
+        }
+      }
+    }
+    world.bolts = world.bolts.filter((b) => !b.dead);
+
+    for (const w of world.winds) {
+      w.life -= dt;
+      w.vy += 300 * dt;
+      w.x += w.vx * dt;
+      w.y += w.vy * dt;
+      let boom = w.life <= 0 || hitsPlat(w.x, w.y);
+      if (!boom) {
+        for (const f of [player, bot]) {
+          if (f !== w.owner && f.alive && pointIn(f, w.x, w.y, 4)) boom = true;
+        }
+      }
+      if (boom) {
+        explodeWind(w.x, w.y, w.owner);
+        w.dead = true;
+      }
+    }
+    world.winds = world.winds.filter((w) => !w.dead);
+
+    for (const c of world.carts) {
+      if (!c.alive) continue;
+      c.arm = Math.max(0, c.arm - dt);
+      c.vy += GRAVITY * dt;
+      if (c.vy > 900) c.vy = 900;
+      c.x += c.vx * dt;
+      if (c.x < 0) { c.x = 0; c.vx = Math.abs(c.vx); }
+      if (c.x + c.w > WORLD_W) { c.x = WORLD_W - c.w; c.vx = -Math.abs(c.vx); }
+      const prevBottom = c.y + c.h;
+      c.y += c.vy * dt;
+      if (c.vy >= 0) {
+        for (let i = 0; i < platforms.length; i++) {
+          const pl = platforms[i];
+          if (c.x + c.w <= pl.x || c.x >= pl.x + pl.w) continue;
+          if (prevBottom <= pl.y + 0.75 && c.y + c.h >= pl.y) {
+            c.y = pl.y - c.h;
+            c.vy = 0;
+            break;
+          }
+        }
+      }
+      if (c.fuse >= 0) {
+        c.fuse -= dt;
+        if (c.fuse <= 0) { explodeCart(c); continue; }
+      }
+      if (c.alive && c.arm <= 0) {
+        for (const f of [player, bot]) {
+          if (!f.alive || f === c.owner) continue;
+          if (rectsOverlap(c, f)) { explodeCart(c); break; }
+        }
+      }
+      if (c.alive && c.y > WORLD_H) explodeCart(c);
+    }
+    world.carts = world.carts.filter((c) => c.alive);
+
+    for (const f of world.fires) {
+      f.life -= dt;
+      f.tick -= dt;
+      if (f.tick <= 0) {
+        f.tick = 0.45;
+        for (const body of [player, bot]) {
+          if (body.alive && rectsOverlap(body, f)) {
+            applyDamage(body, 1.6, { pierceI: true, breach: 0, fromX: f.x + f.w / 2 });
+          }
+        }
+      }
+    }
+    world.fires = world.fires.filter((f) => f.life > 0);
+
+    for (const h of world.hooks) {
+      if (h.state === "fly") {
+        h.life -= dt;
+        h.x += h.vx * dt;
+        h.y += h.vy * dt;
+        const foe = other(h.owner);
+        if (foe && foe.alive && pointIn(foe, h.x, h.y, 6)) {
+          h.state = "pull";
+          h.pull = 0.4;
+          log("Hooked. Pulling them in — no damage from the rod.");
+        } else if (h.life <= 0 || hitsPlat(h.x, h.y)) h.state = "dead";
+      } else if (h.state === "pull") {
+        h.pull -= dt;
+        const foe = other(h.owner);
+        if (!foe || !foe.alive || h.pull <= 0) { h.state = "dead"; continue; }
+        h.x = foe.x + foe.w / 2;
+        h.y = foe.y + foe.h / 2;
+        const ox = h.owner.x + h.owner.w / 2;
+        foe.vx = (ox - h.x) * 6.5;
+        foe.vy = Math.min(foe.vy, -30);
+        foe.grounded = false;
+      }
+    }
+    world.hooks = world.hooks.filter((h) => h.state !== "dead");
+
+    for (const p of world.parts) {
+      p.life -= dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vy += 400 * dt;
+    }
+    world.parts = world.parts.filter((p) => p.life > 0);
+    for (const t of world.texts) {
+      t.life -= dt;
+      t.y -= 28 * dt;
+    }
+    world.texts = world.texts.filter((t) => t.life > 0);
+  }
+
+  function update(dt) {
+    if (hitStop > 0) {
+      hitStop -= dt;
+      stepProjectiles(dt * 0.15);
+      edges.clear();
+      touch.jumpEdge = false;
+      touch.downEdge = false;
+      touch.useEdge = false;
+      mouseAim = null;
+      return;
+    }
+    tickStatus(player, dt);
+    tickStatus(bot, dt);
+    const pi = mode === "fight" ? readPlayerInput() : blankInput();
+    const bi = mode === "fight" ? botInput(dt) : blankInput();
+    if (mode === "fight") {
+      setAimFrom(player, pi);
+      if (player.alive) stepFighter(player, pi, dt);
+      if (bot._faceLock && !bi.wish) bot.facing = bot._faceLock;
+      if (bot.alive) stepFighter(bot, bi, dt);
+      if (bi.use && bot._faceLock) bot.facing = bot._faceLock;
+      separate(dt);
+      if (pi.useEdge && player.alive) useItem(player);
+      if (bi.use && bot.alive) useItem(bot);
+      stepProjectiles(dt);
+    } else {
+      stepFighter(player, pi, dt);
+      stepFighter(bot, bi, dt);
+    }
+    edges.clear();
+    touch.jumpEdge = false;
+    touch.downEdge = false;
+    touch.useEdge = false;
+    mouseAim = null;
+  }
+
+  function resize() {
+    const stage = document.getElementById("stage");
+    if (!stage) return;
+    const rect = stage.getBoundingClientRect();
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    view.w = Math.max(320, rect.width);
+    view.h = Math.max(180, rect.height);
+    view.dpr = dpr;
+    canvas.width = Math.floor(view.w * dpr);
+    canvas.height = Math.floor(view.h * dpr);
+  }
+
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function render(dt) {
+    const zoom = view.w < 720 ? 1.15 : 1.5;
+    view.zoom = zoom;
+    const visW = view.w / zoom;
+    const visH = view.h / zoom;
+    const focusX = (mode === "menu" ? WORLD_W / 2 : player.x + player.w / 2) - visW / 2;
+    const focusY = (mode === "menu" ? 460 : player.y + player.h / 2) - visH * 0.62;
+    const maxX = Math.max(0, WORLD_W - visW);
+    const maxY = Math.max(0, WORLD_H - visH);
+    let tx = Math.min(maxX, Math.max(0, focusX));
+    let ty = Math.min(maxY, Math.max(0, focusY));
+    if (visW >= WORLD_W) tx = -(visW - WORLD_W) / 2;
+    if (visH >= WORLD_H) ty = -(visH - WORLD_H) / 2;
+    const k = 1 - Math.exp(-5 * dt);
+    cam.x += (tx - cam.x) * k;
+    cam.y += (ty - cam.y) * k;
+    if (shake > 0) shake = Math.max(0, shake - dt * 28);
+    const sx = !reduceMotion && shake > 0 ? (Math.random() - 0.5) * shake : 0;
+    const sy = !reduceMotion && shake > 0 ? (Math.random() - 0.5) * shake : 0;
+
+    ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
+    ctx.clearRect(0, 0, view.w, view.h);
+    const g = ctx.createLinearGradient(0, 0, 0, view.h);
+    g.addColorStop(0, "#14081f");
+    g.addColorStop(0.55, "#07060c");
+    g.addColorStop(1, "#05030a");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, view.w, view.h);
+
+    ctx.setTransform(view.dpr * zoom, 0, 0, view.dpr * zoom, 0, 0);
+    ctx.save();
+    ctx.translate(-cam.x + sx, -cam.y + sy);
+
+    for (const s of stars) {
+      ctx.globalAlpha = s.a;
+      ctx.fillStyle = "#e9d5ff";
+      ctx.fillRect(s.x, s.y, s.r, s.r);
+    }
+    ctx.globalAlpha = 1;
+
+    for (const pl of platforms) {
+      ctx.fillStyle = pl.floor ? "#161022" : "#1c1428";
+      ctx.fillRect(pl.x, pl.y, pl.w, pl.h);
+      ctx.fillStyle = "#7c3aed";
+      ctx.fillRect(pl.x, pl.y, pl.w, 3);
+      ctx.strokeStyle = "rgba(216, 180, 254, 0.35)";
+      ctx.strokeRect(pl.x + 0.5, pl.y + 0.5, pl.w - 1, pl.h - 1);
+      ctx.globalAlpha = 0.18;
+      ctx.strokeStyle = "#a855f7";
+      for (let x = pl.x + BLOCK; x < pl.x + pl.w; x += BLOCK) {
+        ctx.beginPath();
+        ctx.moveTo(x, pl.y);
+        ctx.lineTo(x, pl.y + pl.h);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    for (const f of world.fires) {
+      ctx.fillStyle = "rgba(251, 113, 133, 0.35)";
+      ctx.fillRect(f.x, f.y, f.w, f.h);
+      ctx.fillStyle = "#fb7185";
+      ctx.fillRect(f.x + 6, f.y + 8, 10, f.h - 10);
+      ctx.fillStyle = "#fde68a";
+      ctx.fillRect(f.x + 28, f.y + 4, 8, f.h - 8);
+      ctx.fillRect(f.x + 48, f.y + 10, 8, f.h - 14);
+    }
+
+    for (const c of world.carts) {
+      ctx.fillStyle = "#3f3f46";
+      ctx.fillRect(c.x, c.y + c.h - 8, c.w, 8);
+      ctx.fillStyle = c.fuse >= 0 ? "#ef4444" : "#b91c1c";
+      ctx.fillRect(c.x + 4, c.y, c.w - 8, c.h - 8);
+      ctx.fillStyle = "#fff";
+      ctx.font = "10px Trebuchet MS, sans-serif";
+      ctx.fillText("TNT", c.x + 8, c.y + 14);
+    }
+
+    for (const h of world.hooks) {
+      const ox = h.owner.x + h.owner.w / 2;
+      const oy = h.owner.y + 14;
+      ctx.strokeStyle = "#e9d5ff";
+      ctx.beginPath();
+      ctx.moveTo(ox, oy);
+      ctx.lineTo(h.x, h.y);
+      ctx.stroke();
+      ctx.fillStyle = "#f5f3ff";
+      ctx.fillRect(h.x - 3, h.y - 3, 6, 6);
+    }
+
+    for (const b of world.bolts) {
+      ctx.strokeStyle = "#fde68a";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(b.x, b.y);
+      ctx.lineTo(b.x - b.vx * 0.02, b.y - b.vy * 0.02);
+      ctx.stroke();
+      ctx.lineWidth = 1;
+    }
+    for (const w of world.winds) {
+      ctx.strokeStyle = "#67e8f9";
+      ctx.beginPath();
+      ctx.arc(w.x, w.y, 7, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    drawFighter(player);
+    drawFighter(bot);
+
+    for (const p of world.parts) {
+      ctx.globalAlpha = Math.max(0, p.life * 2);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(p.x, p.y, p.r, p.r);
+    }
+    ctx.globalAlpha = 1;
+    ctx.font = "12px Trebuchet MS, sans-serif";
+    for (const t of world.texts) {
+      ctx.globalAlpha = Math.max(0, t.life);
+      ctx.fillStyle = t.color;
+      ctx.fillText(t.text, t.x, t.y);
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+    syncHud();
+  }
+
+  function drawFighter(p) {
+    ctx.save();
+    ctx.globalAlpha = p.alive ? 1 : 0.45;
+    if (p.gliding) {
+      ctx.fillStyle = "rgba(192, 132, 252, 0.9)";
+      ctx.beginPath();
+      if (p.facing > 0) {
+        ctx.moveTo(p.x, p.y + 16);
+        ctx.lineTo(p.x - 28, p.y + 6);
+        ctx.lineTo(p.x - 16, p.y + 30);
+      } else {
+        ctx.moveTo(p.x + p.w, p.y + 16);
+        ctx.lineTo(p.x + p.w + 28, p.y + 6);
+        ctx.lineTo(p.x + p.w + 16, p.y + 30);
+      }
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.fillStyle = p.color;
+    roundRect(p.x, p.y, p.w, p.h, 3);
+    ctx.fill();
+    ctx.lineWidth = p.chest ? 3 : 1.5;
+    ctx.strokeStyle = p.chest ? "#facc15" : p.edge;
+    ctx.stroke();
+    ctx.fillStyle = "#14081f";
+    const visorX = p.facing > 0 ? p.x + p.w - 14 : p.x + 4;
+    ctx.fillRect(visorX, p.y + 12, 10, 5);
+    if (p.swing > 0) {
+      ctx.fillStyle = "#f5f3ff";
+      const wx = p.facing > 0 ? p.x + p.w : p.x - 16;
+      ctx.fillRect(wx, p.y + 18, 16, 4);
+    }
+    const item = currentItem(p);
+    if (item && item.kind === "mace" && (p.fallDist >= 1.15 || p.smashWindow > 0)) {
+      ctx.strokeStyle = "#c4b5fd";
+      ctx.beginPath();
+      ctx.arc(p.x + p.w / 2, p.y - 8, 6, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "#efe8ff";
+    ctx.font = "11px Trebuchet MS, sans-serif";
+    ctx.fillText(p.name, p.x - 8, p.y - 16);
+    ctx.restore();
+  }
+
+  function bar(fillId, absId, p) {
+    const fill = document.getElementById(fillId);
+    const abs = document.getElementById(absId);
+    if (!fill || !abs) return;
+    fill.style.width = Math.max(0, (p.hp / p.maxHp) * 100) + "%";
+    abs.style.width = Math.max(0, (p.absorption / p.maxHp) * 100) + "%";
+  }
+
+  function syncHud() {
+    const you = document.getElementById("you-label");
+    const botL = document.getElementById("bot-label");
+    if (you) {
+      you.textContent = "You  " + Math.max(0, player.hp).toFixed(0) + "/" + player.maxHp +
+        (player.absorption > 0 ? "  +" + player.absorption.toFixed(0) + " abs" : "") +
+        (player.chest ? "  chest" : "") +
+        (player.gliding ? "  gliding" : "");
+    }
+    if (botL) {
+      botL.textContent = "Training Bot  " + Math.max(0, bot.hp).toFixed(0) + "/" + bot.maxHp + "  chest";
+    }
+    bar("you-fill", "you-abs", player);
+    bar("bot-fill", "bot-abs", bot);
+    const buttons = hotbar.querySelectorAll("button");
+    buttons.forEach((b, i) => {
+      const item = player.kit.items[i];
+      if (!item) return;
+      b.classList.toggle("on", i === player.slot);
+      b.classList.toggle("equipped", item.kind === "chest" && player.chest);
+      const cd = b.querySelector(".cd");
+      const left = player.cd[item.id] || 0;
+      if (cd) cd.textContent = left > 0.05 ? left.toFixed(1) : "";
+    });
+  }
+
+  function describe() {
+    const item = currentItem(player);
+    descEl.textContent = item ? item.name + " — " + item.desc : "";
+  }
+
+  function buildHotbar() {
+    hotbar.replaceChildren();
+    player.kit.items.forEach((item, i) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.innerHTML = '<span class="k">' + (i + 1) + "</span>" + item.name + '<span class="cd"></span>';
+      b.addEventListener("click", () => {
+        player.slot = i;
+        describe();
+        syncHud();
+      });
+      hotbar.appendChild(b);
+    });
+    describe();
+  }
+
+  function buildCards() {
+    cards.replaceChildren();
+    Object.keys(KITS).forEach((id) => {
+      const kit = KITS[id];
+      const card = document.createElement("article");
+      card.className = "kit";
+      const h = document.createElement("h3");
+      h.textContent = kit.name;
+      const p = document.createElement("p");
+      p.textContent = kit.summary;
+      const ul = document.createElement("ul");
+      kit.items.forEach((item) => {
+        const li = document.createElement("li");
+        li.textContent = item.name;
+        ul.appendChild(li);
+      });
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = "Fight with " + kit.name;
+      btn.addEventListener("click", () => startKit(id));
+      card.append(h, p, ul, btn);
+      cards.appendChild(card);
+    });
+  }
+
+  function startKit(id) {
+    unlockAudio();
+    player.kit = KITS[id];
+    player.slot = 0;
+    player.chest = false;
+    resetRound();
+    setMode("fight");
+    buildHotbar();
+    log(KITS[id].name + " ready. The bot has a chestplate and a Breach Mace. Fall, then strike.");
+  }
+
+  function resetFight() {
+    if (!player.kit) return;
+    const slot = player.slot;
+    const kit = player.kit;
+    resetRound();
+    player.kit = kit;
+    player.slot = slot;
+    setMode("fight");
+    buildHotbar();
+    log("Rematch. Same kit.");
+  }
+
+  function holdButton(el, key) {
+    if (!el) return;
+    const down = (e) => {
+      e.preventDefault();
+      if (!touch[key]) touch[key + "Edge"] = true;
+      touch[key] = true;
+    };
+    const up = (e) => {
+      e.preventDefault();
+      touch[key] = false;
+    };
+    el.addEventListener("pointerdown", down);
+    el.addEventListener("pointerup", up);
+    el.addEventListener("pointerleave", up);
+    el.addEventListener("pointercancel", up);
+  }
+
+  window.addEventListener("keydown", (e) => {
+    const block = ["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
+    if (block.indexOf(e.code) >= 0) e.preventDefault();
+    if (e.repeat) return;
+    if (e.code === "KeyR" || e.code === "KeyF" || e.code === "KeyJ" || e.code.indexOf("Digit") === 0) e.preventDefault();
+    unlockAudio();
+    if (!keys.has(e.code)) edges.add(e.code);
+    keys.add(e.code);
+  });
+  window.addEventListener("keyup", (e) => keys.delete(e.code));
+  window.addEventListener("blur", () => { keys.clear(); edges.clear(); });
+  canvas.addEventListener("pointerdown", (e) => {
+    if (mode !== "fight") return;
+    unlockAudio();
+    const rect = canvas.getBoundingClientRect();
+    const zoom = view.zoom || 1;
+    mouseAim = {
+      x: (e.clientX - rect.left) / zoom + cam.x,
+      y: (e.clientY - rect.top) / zoom + cam.y,
+    };
+    const dx = mouseAim.x - (player.x + player.w / 2);
+    if (Math.abs(dx) > 8) player.facing = dx > 0 ? 1 : -1;
+    edges.add("Mouse0");
+  });
+
+  holdButton(document.getElementById("t-left"), "left");
+  holdButton(document.getElementById("t-right"), "right");
+  holdButton(document.getElementById("t-down"), "down");
+  holdButton(document.getElementById("t-jump"), "jump");
+  holdButton(document.getElementById("t-use"), "use");
+  btnRestart.addEventListener("click", () => { unlockAudio(); resetFight(); });
+  btnKits.addEventListener("click", () => setMode("menu"));
+  document.getElementById("btn-rematch").addEventListener("click", () => { unlockAudio(); resetFight(); });
+  document.getElementById("btn-change").addEventListener("click", () => setMode("menu"));
+
+  function activeHeld() {
+    return forceKeys || keys;
+  }
+
+  window.__controlsTest = {
+    setKeys: function (codes) {
+      const next = new Set(codes || []);
+      if (next.size === 0) {
+        forceKeys = null;
+        return;
+      }
+      const prev = forceKeys || new Set();
+      next.forEach((code) => { if (!prev.has(code)) edges.add(code); });
+      forceKeys = next;
+    },
+    getSpeed: function () { return Math.abs(player.vx); },
+    getX: function () { return player.x; },
+    getYaw: function () { return player.facing; },
+  };
+
+  function selfTest() {
+    const errors = [];
+    const g = rawMaceDamage(0, -600, 0);
+    const sm = rawMaceDamage(2, 400, 0);
+    const md = rawMaceDamage(6, 750, 0);
+    const hi = rawMaceDamage(12, 1100, 0);
+    const den = rawMaceDamage(8, 900, 2);
+    const nod = rawMaceDamage(8, 900, 0);
+    if (Math.abs(g - 5) > 0.01) errors.push("ground " + g);
+    if (!(sm > 7 && sm < 12)) errors.push("small " + sm);
+    if (!(md > sm + 5)) errors.push("medium " + md);
+    if (!(hi > md + 5)) errors.push("high " + hi);
+    if (!(den > nod + 2)) errors.push("density " + den + " vs " + nod);
+    const bare = armorMul({ chest: false }, 3);
+    const plated = armorMul({ chest: true }, 0);
+    const breached = armorMul({ chest: true }, 3);
+    if (bare !== 1) errors.push("bare armor");
+    if (!(plated < 0.65 && breached > plated && breached < 0.9)) errors.push("breach " + plated + " " + breached);
+
+    const dummy = makeBody({ x: 200, y: FLOOR_Y - 46, grounded: true, kit: KITS.mace });
+    for (let i = 0; i < 30; i++) stepFighter(dummy, { wish: 1 }, STEP);
+    if (dummy.x < 230) errors.push("D/right " + dummy.x);
+    if (dummy.vx > 325) errors.push("run cap " + dummy.vx.toFixed(1));
+    const mid = dummy.x;
+    for (let i = 0; i < 40; i++) stepFighter(dummy, { wish: -1 }, STEP);
+    if (dummy.x >= mid - 15) errors.push("A/left " + dummy.x);
+
+    dummy.grounded = true;
+    dummy.y = FLOOR_Y - dummy.h;
+    dummy.vy = 0;
+    dummy.coyote = 0.1;
+    stepFighter(dummy, { wish: 0, jumpEdge: true }, STEP);
+    if (!(dummy.vy < -200) || dummy.grounded) errors.push("jump " + dummy.vy);
+
+    dummy.y = 180;
+    dummy.x = 430;
+    dummy.vx = 0;
+    dummy.vy = -500;
+    dummy.grounded = false;
+    dummy.fallDist = 0;
+    dummy.wasAir = true;
+    dummy.coyote = 0;
+    dummy.airTime = 1;
+    dummy.kit = KITS.mace;
+    for (let i = 0; i < 12; i++) stepFighter(dummy, { wish: 0 }, STEP);
+    if (dummy.fallDist > 0.05) errors.push("rise counted " + dummy.fallDist);
+    for (let i = 0; i < 150; i++) stepFighter(dummy, { wish: 0 }, STEP);
+    if (!dummy.grounded) errors.push("no land");
+    if (Math.abs(dummy.y + dummy.h - FLOOR_Y) > 1.5) errors.push("floor y " + dummy.y);
+
+    const savedMode = mode;
+    mode = "fight";
+    player.kit = KITS.mace;
+    player.slot = 0;
+    player.cd = {};
+    player.chest = false;
+    player.alive = true;
+    bot.alive = true;
+    bot.chest = true;
+    bot.hp = 20;
+    bot.iFrame = 0;
+    player.x = 400;
+    player.y = FLOOR_Y - player.h;
+    player.facing = 1;
+    player.grounded = true;
+    player.vy = 0;
+    player.fallDist = 0;
+    player.smashWindow = 0;
+    player.smashFall = 0;
+    bot.x = player.x + 42;
+    bot.y = player.y;
+    setAimFrom(player, { down: false, up: false });
+    useItem(player);
+    const groundDealt = 20 - bot.hp;
+    if (groundDealt < 2.6 || groundDealt > 4.6) errors.push("armored ground " + groundDealt);
+
+    bot.hp = 20;
+    bot.iFrame = 0;
+    bot.alive = true;
+    bot.x = player.x + 420;
+    player.cd = {};
+    player.fallDist = 6;
+    player.vy = 800;
+    player.grounded = false;
+    useItem(player);
+    if (Math.abs(bot.hp - 20) > 0.01) errors.push("far hit");
+    if (player.fallDist < 5) errors.push("miss ate fall " + player.fallDist);
+
+    bot.x = player.x + 42;
+    bot.y = player.y;
+    bot.hp = 20;
+    bot.iFrame = 0;
+    bot.alive = true;
+    player.cd = {};
+    player.grounded = false;
+    player.fallDist = 10;
+    player.peakDownVy = 1000;
+    player.vy = 1000;
+    player.smashWindow = 0;
+    player.facing = 1;
+    useItem(player);
+    const big = 20 - bot.hp;
+    if (big < 16) errors.push("dive " + big);
+
+    bot.hp = 20;
+    bot.iFrame = 0;
+    bot.alive = true;
+    player.cd = {};
+    player.fallDist = 0;
+    player.smashWindow = 0;
+    player.smashFall = 0;
+    player.vy = -500;
+    player.grounded = false;
+    player.wasAir = true;
+    useItem(player);
+    const rising = 20 - bot.hp;
+    if (Math.abs(rising - groundDealt) > 0.45) errors.push("rise " + rising + " vs " + groundDealt);
+
+    player.slot = 1;
+    player.cd = {};
+    bot.hp = 40;
+    bot.maxHp = 40;
+    bot.iFrame = 0;
+    bot.alive = true;
+    bot.x = player.x + 42;
+    player.grounded = true;
+    player.vy = 0;
+    player.fallDist = 0;
+    player.smashWindow = 0;
+    useItem(player);
+    if (player.vy > -500) errors.push("wind burst " + player.vy);
+    bot.maxHp = 20;
+
+    player.kit = KITS.elytra;
+    player.slot = 2;
+    player.cd = {};
+    player.gliding = true;
+    player.grounded = false;
+    player.chest = false;
+    player.facing = 1;
+    player.vx = 0;
+    player.vy = 40;
+    player.y = 220;
+    useItem(player);
+    if (player.vx < 500) errors.push("firework vx " + player.vx);
+    if (!(player.vy < 0)) errors.push("firework vy " + player.vy);
+    const boosted = player.vx;
+    for (let i = 0; i < 10; i++) stepFighter(player, { wish: 0 }, STEP);
+    if (player.vx < boosted * 0.75) errors.push("boost capped " + player.vx);
+
+    player.chest = false;
+    player.gliding = true;
+    player.grounded = false;
+    player.slot = 5;
+    player.cd = {};
+    useItem(player);
+    if (!player.chest || player.gliding) errors.push("chest toggle");
+    player.slot = 1;
+    player.cd = {};
+    player.grounded = false;
+    useItem(player);
+    if (player.gliding) errors.push("elytra through chest");
+
+    player.hp = 8;
+    player.absorption = 0;
+    player.alive = true;
+    player.slot = 4;
+    player.cd = {};
+    useItem(player);
+    if (player.hp < 14) errors.push("gapple " + player.hp);
+    if (player.absorption < 4) errors.push("abs " + player.absorption);
+
+    player.kit = KITS.tnt;
+    player.slot = 0;
+    player.cd = {};
+    player.alive = true;
+    player.hp = 20;
+    player.chest = false;
+    bot.alive = true;
+    bot.hp = 20;
+    bot.iFrame = 0;
+    bot.chest = true;
+    player.x = 500;
+    player.y = FLOOR_Y - player.h;
+    player.facing = 1;
+    player.grounded = true;
+    bot.x = player.x + 70;
+    bot.y = player.y;
+    setAimFrom(player, { down: false, up: false });
+    clearWorld();
+    useItem(player);
+    for (let i = 0; i < 20; i++) stepProjectiles(STEP);
+    if (bot.hp > 16.5) errors.push("bolt " + bot.hp);
+
+    bot.hp = 20;
+    bot.iFrame = 0;
+    player.slot = 3;
+    player.cd = {};
+    player.x = 500;
+    player.y = FLOOR_Y - player.h;
+    player.vx = 0;
+    player.vy = 0;
+    player.facing = 1;
+    player.grounded = true;
+    bot.x = 640;
+    bot.y = player.y;
+    bot.vx = 0;
+    bot.vy = 0;
+    bot.grounded = true;
+    setAimFrom(player, { down: false, up: false });
+    clearWorld();
+    const hpBeforeRod = bot.hp;
+    useItem(player);
+    for (let i = 0; i < 50; i++) {
+      stepProjectiles(STEP);
+      stepFighter(bot, { wish: 0 }, STEP);
+      stepFighter(player, { wish: 0 }, STEP);
+    }
+    if (Math.abs(bot.hp - hpBeforeRod) > 0.01) errors.push("rod damaged " + bot.hp);
+    if (bot.x > 610) errors.push("rod did not pull " + bot.x.toFixed(1));
+
+    player.slot = 2;
+    player.cd = {};
+    player.x = 700;
+    player.y = FLOOR_Y - player.h;
+    bot.x = 760;
+    bot.y = player.y;
+    bot.hp = 20;
+    bot.iFrame = 0;
+    bot.alive = true;
+    player.hp = 20;
+    player.alive = true;
+    player.iFrame = 0;
+    clearWorld();
+    useItem(player);
+    if (world.carts.length !== 1) errors.push("no cart");
+    world.carts[0].fuse = 0.05;
+    world.carts[0].x = player.x + 10;
+    for (let i = 0; i < 10; i++) stepProjectiles(STEP);
+    if (player.hp > 16) errors.push("cart self " + player.hp);
+    if (world.carts.length !== 0) errors.push("cart still there");
+
+    player.kit = KITS.mace;
+    player.slot = 2;
+    player.cd = {};
+    player.alive = true;
+    player.grounded = true;
+    player.y = FLOOR_Y - player.h;
+    player.vy = 0;
+    player.x = 300;
+    setAimFrom(player, { down: true, up: false });
+    clearWorld();
+    useItem(player);
+    for (let i = 0; i < 40; i++) stepProjectiles(STEP);
+    if (!(player.vy < -350)) errors.push("rocket " + player.vy.toFixed(1));
+
+    mode = savedMode;
+    resetRound();
+    player.kit = KITS.mace;
+    player.slot = 0;
+    setMode("menu");
+    return {
+      ok: errors.length === 0,
+      errors: errors,
+      sample: { ground: g, small: sm, medium: md, high: hi, density: den, groundDealt: groundDealt, dive: big },
+    };
+  }
+
+  buildCards();
+  setMode("menu");
+  resize();
+  window.addEventListener("resize", resize);
+  if (window.ResizeObserver) new ResizeObserver(resize).observe(document.getElementById("stage"));
+
+  let check = { ok: false, errors: ["not run"] };
+  try {
+    check = selfTest();
+  } catch (err) {
+    check = { ok: false, errors: [String(err && err.stack || err)] };
+  }
+  window.__maceCheck = check;
+  console.log("voidware self-test", check.ok ? "ok" : check.errors, check.sample || "");
+
+  window.__vw = {
+    start: startKit,
+    reset: resetFight,
+    snap: function () {
+      return {
+        mode: mode,
+        x: player.x, y: player.y, vx: player.vx, vy: player.vy,
+        facing: player.facing, grounded: player.grounded, gliding: player.gliding,
+        chest: player.chest, hp: player.hp, abs: player.absorption,
+        fall: player.fallDist, smash: player.smashWindow, slot: player.slot,
+        botHp: bot.hp, botX: bot.x, botY: bot.y, botAlive: bot.alive,
+        carts: world.carts.length, fires: world.fires.length, hooks: world.hooks.length,
+        check: window.__maceCheck,
+      };
+    },
+    setPos: function (x, y) { player.x = x; player.y = y; player.vx = 0; player.vy = 0; },
+    setBot: function (x, y) { bot.x = x; bot.y = y; bot.vx = 0; bot.vy = 0; bot.alive = true; },
+  };
+
+  let last = performance.now();
+  let acc = 0;
+  function frame(now) {
+    let dt = (now - last) / 1000;
+    last = now;
+    if (dt > 0.1) dt = 0.1;
+    acc += dt;
+    let guard = 0;
+    while (acc >= STEP && guard < 5) {
+      update(STEP);
+      acc -= STEP;
+      guard++;
+    }
+    if (guard >= 5) acc = 0;
+    render(dt);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+  </script>
+</body>
+</html>
